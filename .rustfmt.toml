@@ -1,0 +1,6 @@
+# The maximum line width
+max_width = 120
+
+# Force rustfmt to use 100% of max_width for all kinds of lines
+# (by default, different kinds of lines get their own maximum widths relative to max_width).
+use_small_heuristics = "Max"
