@@ -2,6 +2,7 @@
 
 use std::mem::size_of;
 
+#[doc(hidden)]
 pub trait TypeSizeAssertHelper<T> {
     const EQ_GUARD: ();
 }
@@ -14,12 +15,12 @@ impl<T1, T2> TypeSizeAssertHelper<T1> for T2 {
     };
 }
 
-// Note: as mentioned below, this static_assert can only fail during `cargo build`, but not during `cargo check`
+// Note: as mentioned below, this static_assert can only fail during "cargo build", but not during "cargo check"
 // or a "no_run" doc test. So, don't use "no_run" in the tests below, because such a test can succeed even if it's
-// incorrect (note that the "compile_fail" test does work correctly).
+// incorrect (note that the "compile_fail" test does work as expected).
 
 /// Fail the compilation if the passed types have different sizes.
-/// 
+///
 /// E.g. this will fail:
 /// ```compile_fail
 /// # use rc5_test::utils::static_assert_size_eq;
@@ -39,9 +40,9 @@ impl<T1, T2> TypeSizeAssertHelper<T1> for T2 {
 /// `cargo check` (so rust-analyzer won't complain about it either).
 #[macro_export]
 macro_rules! static_assert_size_eq {
-    ($t1:ty, $t2: ty) => {
-        {let _ = <$t1 as $crate::utils::TypeSizeAssertHelper<$t2>>::EQ_GUARD;}
-    };
+    ($t1:ty, $t2: ty) => {{
+        let _ = <$t1 as $crate::utils::TypeSizeAssertHelper<$t2>>::EQ_GUARD;
+    }};
 }
 
 pub use static_assert_size_eq;

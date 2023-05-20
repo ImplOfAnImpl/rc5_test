@@ -87,6 +87,10 @@ impl<F: Flavor> Rc5Cypher<F> {
     }
 
     fn expand_key(key: &[u8], num_rounds: u8) -> Zeroizing<Vec<F::WordType>> {
+        // Note: here zeroize is used to make sure that the key won't be left in memory after the cypher object
+        // is destroyed. However, zeroize won't help if a reallocation occurs due to a vector's capacity change,
+        // so it's important to reserve the required capacities in advance.
+
         let word_size = size_of::<F::WordType>();
         let num_words_in_key = if key.len() == 0 { 1 } else { (key.len() + word_size - 1) / word_size };
 
@@ -149,6 +153,9 @@ fn adjust_rot_amount<T: PrimInt + FromPrimitive>(num_bits: T) -> u32 {
     (num_bits % T::from_usize(size_of::<T>() * 8).unwrap()).to_u32().unwrap()
 }
 
+/// A sealed trait that all "flavor" structs implement.
+pub trait Flavor: private::InternalFlavor {}
+
 /// Selector for the 16-bit version of the cypher. The block size will be 32 bit.
 pub struct Flavor16;
 
@@ -180,9 +187,6 @@ define_flavor!(Flavor16, u16, U4, 0xb7e1, 0x9e37);
 define_flavor!(Flavor32, u32, U8, 0xb7e15163, 0x9e3779b9);
 define_flavor!(Flavor64, u64, U16, 0xb7e151628aed2a6b, 0x9e3779b97f4a7c15);
 
-/// A sealed trait that all "flavor" structs implement.
-pub trait Flavor: private::InternalFlavor {}
-
 mod private {
     use bytemuck::Pod;
     use generic_array::ArrayLength;
@@ -190,6 +194,7 @@ mod private {
     use zeroize::Zeroize;
 
     pub trait InternalFlavor {
+        // Cypher's word type
         type WordType: PrimInt
             + Unsigned
             + WrappingAdd
@@ -199,9 +204,10 @@ mod private {
             + ToPrimitive
             + Pod
             + Zeroize;
-        //type Block;
+        // Size tag type for the GenericArray that will be used as the in-out parameter of encrypt/decrypt_block.
         type BlockArraySizeTag: ArrayLength<u8>;
 
+        // "Magic" constants that are defined in the spec.
         const MAGIC_P: Self::WordType;
         const MAGIC_Q: Self::WordType;
     }
